@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { css } from "@emotion/core";
-import Router from "next/router";
+import Router, { useRouter } from "next/router";
+import FileUploader from "react-firebase-file-uploader";
 import Layout from "../components/layout/Layout";
 import {
   Formulario,
@@ -9,7 +10,7 @@ import {
   Error,
 } from "../components/ui/Formulario";
 
-import firebase from "../firebase";
+import { FirebaseContext } from "../firebase";
 
 // validaciones
 import useValidacion from "../hooks/useValidacion";
@@ -19,7 +20,7 @@ const STATE_INICIAL = {
   nombre: "",
   email: "",
   empresa: "",
-  imagen: "",
+  // imagen: "",
   url: "",
   descripcion: "",
 };
@@ -33,11 +34,36 @@ const NuevoProducto = () => {
     handleSubmit,
     handleChange,
     handleBlur,
-  } = useValidacion(STATE_INICIAL, validarCrearCuenta, crearCuenta);
+  } = useValidacion(STATE_INICIAL, validarCrearProducto, crearProducto);
 
   const { nombre, empresa, imagen, url, descripcion } = valores;
 
-  async function crearCuenta() {}
+  // hook de routing para redireccionar
+  const router = useRouter();
+
+  // context con las operaciones crud de firebase
+  const { usuario, firebase } = useContext(FirebaseContext);
+
+  async function crearProducto() {
+    // si el usuario no esta autenticado, llevar al login
+    if (!usuario) {
+      return router.push("/login");
+    }
+
+    // crear el objeto del nuevo producto
+    const producto = {
+      nombre,
+      empresa,
+      url,
+      descripcion,
+      votos: 0,
+      comentarios: [],
+      creado: Date.now(),
+    };
+
+    // insertarlo en una base de datos
+    firebase.db.collection("productos").add(producto);
+  }
 
   return (
     <div>
@@ -87,13 +113,19 @@ const NuevoProducto = () => {
 
               <Campo>
                 <label htmlFor="imagen">Imagen</label>
-                <input
-                  type="file"
+                <FileUploader
+                  accept="image/*"
                   id="imagen"
                   name="imagen"
                   value={imagen}
                   onChange={handleChange}
                   onBlur={handleBlur}
+                  randomizeFilename
+                  storageRef={firebase.storage.ref("productos")}
+                  onUploadStart={handleUploadStart}
+                  onUploadError={handleUploadError}
+                  onUploadSuccess={handleUploadSuccess}
+                  onProgress={handleProgress}
                 />
               </Campo>
 
@@ -105,6 +137,7 @@ const NuevoProducto = () => {
                   type="url"
                   id="url"
                   name="url"
+                  placeholder="URL de tu producto"
                   value={url}
                   onChange={handleChange}
                   onBlur={handleBlur}
