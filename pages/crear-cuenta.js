@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { css } from "@emotion/core";
+import Router from "next/router";
 import Layout from "../components/layout/Layout";
 import {
   Formulario,
@@ -8,16 +9,21 @@ import {
   Error,
 } from "../components/ui/Formulario";
 
+import firebase from "../firebase";
+
 // validaciones
 import useValidacion from "../hooks/useValidacion";
 import validarCrearCuenta from "../validacion/validarCrearCuenta";
+import { route } from "next/dist/next-server/server/router";
+
+const STATE_INICIAL = {
+  nombre: "",
+  email: "",
+  password: "",
+};
 
 const CrearCuenta = () => {
-  const STATE_INICIAL = {
-    nombre: "",
-    email: "",
-    password: "",
-  };
+  const [error, guardarError] = useState(false);
 
   const {
     valores,
@@ -29,8 +35,14 @@ const CrearCuenta = () => {
 
   const { nombre, email, password } = valores;
 
-  function crearCuenta() {
-    console.log("Creando cuenta...");
+  async function crearCuenta() {
+    try {
+      await firebase.registrar(nombre, email, password);
+      Router.push("/");
+    } catch (error) {
+      console.error("Hubo un error al crear un usuario", error.message);
+      guardarError(error.message);
+    }
   }
 
   return (
@@ -64,7 +76,7 @@ const CrearCuenta = () => {
             <Campo>
               <label htmlFor="email">Email</label>
               <input
-                type="text"
+                type="email"
                 id="email"
                 placeholder="Tu Email"
                 name="email"
@@ -79,7 +91,7 @@ const CrearCuenta = () => {
             <Campo>
               <label htmlFor="password">Password</label>
               <input
-                type="text"
+                type="password"
                 id="password"
                 placeholder="Tu Password"
                 name="password"
@@ -90,6 +102,8 @@ const CrearCuenta = () => {
             </Campo>
 
             {errores.password && <Error>{errores.password}</Error>}
+
+            {error && <Error>{error}</Error>}
 
             <InputSubmit type="submit" value="Crear Cuenta" />
           </Formulario>
