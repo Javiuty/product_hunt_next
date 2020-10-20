@@ -14,7 +14,6 @@ import firebase from "../firebase";
 // validaciones
 import useValidacion from "../hooks/useValidacion";
 import validarCrearCuenta from "../validacion/validarCrearCuenta";
-import { route } from "next/dist/next-server/server/router";
 
 const STATE_INICIAL = {
   nombre: "",
